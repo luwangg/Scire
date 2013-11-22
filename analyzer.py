@@ -3,6 +3,7 @@
 
 
 import sys
+import os
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
@@ -30,9 +31,12 @@ class Example(QtGui.QMainWindow):
         
         self.dock1 = QtGui.QDockWidget(self)
         self.dock2 = QtGui.QDockWidget(self)
+        self.dock3 = QtGui.QDockWidget(self)
         self.addDockWidget(
             QtCore.Qt.RightDockWidgetArea, self.dock1)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.dock2)
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.dock3)
+                           
         #self.splitDockWidget(self.dock1, self.dock2, Qt.Vertical)
 
         self.label = QtGui.QLabel(self)
@@ -44,6 +48,11 @@ class Example(QtGui.QMainWindow):
         openFile.setStatusTip('Open new File')
         openFile.triggered.connect(self.showDialog)
 
+        openFolder = QtGui.QAction(QtGui.QIcon('open.png'), 'Open', self)
+        openFolder.setShortcut('Ctrl+O')
+        openFolder.setStatusTip('Open Folder')
+        openFolder.triggered.connect(self.openFolder)
+
         exitAction = QtGui.QAction(QtGui.QIcon('exit24.png'), 'Exit', self)
         exitAction.setShortcut('Ctrl+Q')
         exitAction.setStatusTip('Exit application')
@@ -53,8 +62,10 @@ class Example(QtGui.QMainWindow):
 
         menubar = self.menuBar()
         fileopen = menubar.addMenu('&File')
+        folderopen = menubar.addMenu('&Folder')
         exitaction = menubar.addMenu('Exit')
         fileopen.addAction(openFile)
+        folderopen.addAction(openFolder)
         exitaction.addAction(exitAction)
 
         #toolbar = self.addToolBar('&File')
@@ -62,6 +73,31 @@ class Example(QtGui.QMainWindow):
         self.setGeometry(300, 300, 350, 250)
         self.setWindowTitle('Data Analysis')    
         self.show()
+        
+
+    def openFolder(self):
+        folder = QtGui.QFileDialog(self)
+        folder.setFileMode(QtGui.QFileDialog.Directory)
+        folder.setOption(QtGui.QFileDialog.ShowDirsOnly, True)
+        #foldertreeview = folder.findChild(QtGui.QTreeView)
+        #foldertreeview.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
+
+        
+        a = ""
+        if folder.exec_():
+            for d in folder.selectedFiles():
+                print d
+                a = "%s/" %(d)
+        dirs = os.listdir(a)
+        for file in dirs:
+          print file
+
+
+                
+
+
+        
+                
         
     def showDialog(self):
 
@@ -98,7 +134,9 @@ class Example(QtGui.QMainWindow):
           ptrigstring = str(ptrig)
           pstring = str(p)
           
+          self.dock1.setTitleBarWidget(QtGui.QLabel('Power under the trigger'))
           self.dock1.setWidget(QtGui.QLabel(ptrigstring))
+          self.dock2.setTitleBarWidget(QtGui.QLabel('Power'))
           self.dock2.setWidget(QtGui.QLabel(pstring))
           print ptrig
           print p
@@ -110,7 +148,7 @@ class Example(QtGui.QMainWindow):
           #powertrigger.setWidget(ptrig)
           #power.setWidget(p)
 
-   def updatePlot(self, ):                                 
+   #def updatePlot(self, ):                                 
         
 
 def main():
