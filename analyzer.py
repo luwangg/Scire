@@ -20,15 +20,13 @@ class Example(QtGui.QMainWindow):
     def initUI(self):               
         
      
-        
         self.graphwin = pg.GraphicsWindow(title="Current Sense Analysis")
         self.graphwin.resize(1000,600)
         self.graphwin.setWindowTitle('Current vs time')
         self.setCentralWidget(self.graphwin)
         #self.graphwin.move(15,10)
-
-        self.label = QtGui.QLabel(self)
         
+
         self.dock1 = QtGui.QDockWidget(self)
         self.dock2 = QtGui.QDockWidget(self)
         self.dock3 = QtGui.QDockWidget(self)
@@ -39,28 +37,40 @@ class Example(QtGui.QMainWindow):
                            
         #self.splitDockWidget(self.dock1, self.dock2, Qt.Vertical)
 
-        self.label = QtGui.QLabel(self)
+        # Create a status bar
+        self.statusBar()
 
 
+        # Add a dock to the right of the plot
+        self.dock1 = QtGui.QDockWidget(self)
+        self.dock1.setWindowTitle("Statistics")
+        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.dock1)
 
+        #self.splitDockWidget(self.dock1, self.dock2, Qt.Vertical)
+
+        # Create a menu bar
+        menubar = self.menuBar()
+
+        # Add button and shortcut to open files
         openFile = QtGui.QAction(QtGui.QIcon('open.png'), 'Open', self)
         openFile.setShortcut('Ctrl+O')
         openFile.setStatusTip('Open new File')
         openFile.triggered.connect(self.showDialog)
+
 
         openFolder = QtGui.QAction(QtGui.QIcon('open.png'), 'Open', self)
         openFolder.setShortcut('Ctrl+O')
         openFolder.setStatusTip('Open Folder')
         openFolder.triggered.connect(self.openFolder)
 
+        # Add button and shortcut to quit the program
+
         exitAction = QtGui.QAction(QtGui.QIcon('exit24.png'), 'Exit', self)
         exitAction.setShortcut('Ctrl+Q')
         exitAction.setStatusTip('Exit application')
         exitAction.triggered.connect(self.close)
 
-        self.statusBar()
 
-        menubar = self.menuBar()
         fileopen = menubar.addMenu('&File')
         folderopen = menubar.addMenu('&Folder')
         exitaction = menubar.addMenu('Exit')
@@ -73,6 +83,7 @@ class Example(QtGui.QMainWindow):
         self.setGeometry(300, 300, 350, 250)
         self.setWindowTitle('Data Analysis')    
         self.show()
+
         
 
     def openFolder(self):
@@ -99,6 +110,73 @@ class Example(QtGui.QMainWindow):
         
                 
         
+
+
+        # def updatePlot(self, ):                                 
+    def updateStatistics(self, minCurrent, maxCurrent):
+
+        # Statistics for the whole window
+        wholeWindowBox = QtGui.QGroupBox(self.dock1)
+        wholeWindowBox.setFlat(True)
+        wholeWindowBox.setTitle("Whole File")
+
+        labelMin = QtGui.QLabel(self.dock1)
+        labelMin.setText("Min Current: %.2f mA" % (minCurrent))
+
+        labelMax = QtGui.QLabel(self.dock1)
+        labelMax.setText("Max Current: %.2f mA" % (maxCurrent))
+
+        wholeLayout = QtGui.QVBoxLayout()
+        wholeLayout.addWidget(labelMin)
+        wholeLayout.addWidget(labelMax)
+     #   wholeLayout.addStretch(1)
+        wholeWindowBox.setLayout(wholeLayout)
+
+        # Statistics for just the area under the trigger
+        triggerBox = QtGui.QGroupBox(self.dock1)
+        triggerBox.setFlat(True)
+        triggerBox.setTitle("Trigger Area(s)")
+
+        labelMin = QtGui.QLabel(self.dock1)
+        labelMin.setText("Min Current: %.2f mA" % (minCurrent))
+
+        labelMax = QtGui.QLabel(self.dock1)
+        labelMax.setText("Max Current: %.2f mA" % (maxCurrent))
+
+        triggerLayout = QtGui.QVBoxLayout()
+        triggerLayout.addWidget(labelMin)
+        triggerLayout.addWidget(labelMax)
+      #  triggerLayout.addStretch(1)
+        triggerBox.setLayout(triggerLayout)
+
+        # Statistics for the area between the selectors
+        selectorBox = QtGui.QGroupBox(self.dock1)
+        selectorBox.setFlat(True)
+        selectorBox.setTitle("Selection Area")
+
+        labelMin = QtGui.QLabel(self.dock1)
+        labelMin.setText("Min Current: %.2f mA" % (minCurrent))
+
+        labelMax = QtGui.QLabel(self.dock1)
+        labelMax.setText("Max Current: %.2f mA" % (maxCurrent))
+
+        selectorLayout = QtGui.QVBoxLayout()
+        selectorLayout.addWidget(labelMin)
+        selectorLayout.addWidget(labelMax)
+      #  triggerLayout.addStretch(1)
+        selectorBox.setLayout(selectorLayout)
+
+        statsBox = QtGui.QGroupBox(self.dock1)
+        vbox = QtGui.QVBoxLayout()
+        vbox.addWidget(wholeWindowBox)
+        vbox.addWidget(triggerBox)
+        vbox.addWidget(selectorBox)
+        vbox.addStretch(1)
+
+        statsBox.setLayout(vbox)
+        self.dock1.setWidget(statsBox)
+
+
     def showDialog(self):
 
         fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
@@ -133,23 +211,28 @@ class Example(QtGui.QMainWindow):
 
           ptrigstring = str(ptrig)
           pstring = str(p)
-          
+
           self.dock1.setTitleBarWidget(QtGui.QLabel('Power under the trigger'))
           self.dock1.setWidget(QtGui.QLabel(ptrigstring))
           self.dock2.setTitleBarWidget(QtGui.QLabel('Power'))
           self.dock2.setWidget(QtGui.QLabel(pstring))
           print ptrig
           print p
+
+          self.updateStatistics(3.14, 6.28)
+
           p1 = self.graphwin.addPlot(title="Main plot", labels={'left':"Current (mA)", 'bottom':"Time (s)"})
           p1.plot(xTime, yCurrent, pen=(0,255,0))
           p1.plot(xTime, yTrigger, pen=(255,0,0))
-          #powertrigger = self.dock1
-          #power = self.dock2
-          #powertrigger.setWidget(ptrig)
-          #power.setWidget(p)
+
 
    #def updatePlot(self, ):                                 
         
+
+          selector = pg.LinearRegionItem()
+          p1.addItem(selector)
+          selector.setRegion(0.1, 0.4)
+
 
 def main():
     
