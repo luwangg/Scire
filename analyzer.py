@@ -34,6 +34,7 @@ class Example(QtGui.QMainWindow):
             QtCore.Qt.RightDockWidgetArea, self.dock1)
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.dock2)
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.dock3)
+        #self.list = QtGui.QListWidget(self)
                            
         #self.splitDockWidget(self.dock1, self.dock2, Qt.Vertical)
 
@@ -93,7 +94,8 @@ class Example(QtGui.QMainWindow):
         #foldertreeview = folder.findChild(QtGui.QTreeView)
         #foldertreeview.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
 
-        
+        self.list = QtGui.QListWidget(self.dock3)
+        btn = QtGui.QPushButton('Open File', self.dock3)
         a = ""
         if folder.exec_():
             for d in folder.selectedFiles():
@@ -102,9 +104,26 @@ class Example(QtGui.QMainWindow):
         dirs = os.listdir(a)
         for file in dirs:
           print file
+          self.list.addItem(file)
 
+        filelist = QtGui.QGroupBox(self.dock3)
+        filelistlayout = QtGui.QVBoxLayout()
+        filelistlayout.addWidget(self.list)
+        filelistlayout.addWidget(btn)
+        
 
-                
+        filelist.setLayout(filelistlayout)
+        self.dock3.setWidget(filelist)
+
+        btn.clicked.connect(self.showfile)
+
+    def showfile(self):
+
+        self.selectedfile = self.list.currentItem()
+        filedir = QtGui.QFileDialog.getOpenFileName(self)
+        
+        
+        f1 = open(filedir, 'rb')
 
 
         
