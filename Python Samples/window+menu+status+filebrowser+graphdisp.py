@@ -67,7 +67,7 @@ class Example(QtGui.QMainWindow):
 
         
         fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', 
-                '/home')
+                '.')
         
         f = open(fname, 'rb')
         xTime = []
@@ -104,7 +104,7 @@ class Example(QtGui.QMainWindow):
           self.dock2.setWidget(QtGui.QLabel(pstring))
           print ptrig
           print p
-          p1 = self.graphwin.addPlot(title="Main plot")
+          p1 = self.graphwin.addPlot(title="Main plot", labels={'left':"Current (mA)", 'bottom':"Time (s)"})
           p1.plot(xTime, yCurrent, pen=(0,255,0))
           p1.plot(xTime, yTrigger, pen=(255,0,0))
           #powertrigger = self.dock1
