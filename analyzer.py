@@ -26,7 +26,7 @@ class Example(QtGui.QMainWindow):
         self.setCentralWidget(self.graphwin)
         #self.graphwin.move(15,10)
         
-
+        self.folder_path = ""
         self.dock1 = QtGui.QDockWidget(self)
         self.dock2 = QtGui.QDockWidget(self)
         self.dock3 = QtGui.QDockWidget(self)
@@ -86,7 +86,7 @@ class Example(QtGui.QMainWindow):
         self.show()
 
         
-
+    
     def openFolder(self):
         folder = QtGui.QFileDialog(self)
         folder.setFileMode(QtGui.QFileDialog.Directory)
@@ -95,38 +95,46 @@ class Example(QtGui.QMainWindow):
         #foldertreeview.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
 
         self.list = QtGui.QListWidget(self.dock3)
-        btn = QtGui.QPushButton('Open File', self.dock3)
-        a = ""
+        #btn = QtGui.QPushButton('Open File', self.dock3)
+        #folder_path = ""
+        filepath = ""
         if folder.exec_():
-            for d in folder.selectedFiles():
-                print d
-                a = "%s/" %(d)
-        dirs = os.listdir(a)
+            for filepath in folder.selectedFiles():
+                print filepath
+                self.folder_path = "%s/" %(filepath)
+        dirs = os.listdir(self.folder_path)
         for file in dirs:
           print file
           self.list.addItem(file)
+           
 
         filelist = QtGui.QGroupBox(self.dock3)
         filelistlayout = QtGui.QVBoxLayout()
         filelistlayout.addWidget(self.list)
-        filelistlayout.addWidget(btn)
+        #filelistlayout.addWidget(btn)
         
 
         filelist.setLayout(filelistlayout)
         self.dock3.setWidget(filelist)
 
-        btn.clicked.connect(self.showfile)
+        #btn.clicked.connect(self.showfile)
+        self.list.itemDoubleClicked.connect(self.showfile)
 
     def showfile(self):
 
-        self.selectedfile = self.list.currentItem()
-        filedir = QtGui.QFileDialog.getOpenFileName(self)
+        self.selectedfile = self.list.currentItem().text()
+        print self.selectedfile
+        
+        selectedfilestr = str(self.selectedfile)
+        selectedfilepath = "%s%s" %(self.folder_path, selectedfilestr)
+        print selectedfilepath
+        clickedfile= QtGui.QFileDialog.getOpenFileName(self, 'Open File', selectedfilepath)
         
         
-        f1 = open(filedir, 'rb')
+        f1 = open(clickedfile, 'rb')
 
 
-        
+
                 
         
 
