@@ -27,9 +27,7 @@ class Example(QtGui.QMainWindow):
         
         self.folder_path = ""
 
-        # Add a dock to the left of the plot
-        self.fileDock = QtGui.QDockWidget(self)
-        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.fileDock)
+
         
 
         # Create a status bar
@@ -47,7 +45,7 @@ class Example(QtGui.QMainWindow):
         openFile = QtGui.QAction(QtGui.QIcon('open.png'), 'Open File', self)
         openFile.setShortcut('Ctrl+O')
         openFile.setStatusTip('Open new File')
-        openFile.triggered.connect(self.showDialog)
+        openFile.triggered.connect(self.openFile)
 
         # Add button and shortcut to open folders
         openFolder = QtGui.QAction(QtGui.QIcon('open.png'), 'Open Folder', self)
@@ -70,10 +68,13 @@ class Example(QtGui.QMainWindow):
         self.setWindowTitle('Data Analysis') 
 
         self.layoutStatistics()
-        self.layoutFolderSidebar()
         self.show()
 
     def layoutFolderSidebar(self):
+        # Add a dock to the left of the plot
+        self.fileDock = QtGui.QDockWidget(self)
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.fileDock)
+
         self.list = QtGui.QListWidget(self.fileDock)
 
         self.filelist = QtGui.QGroupBox(self.fileDock)
@@ -94,6 +95,10 @@ class Example(QtGui.QMainWindow):
         folder.setFileMode(QtGui.QFileDialog.Directory)
         folder.setOption(QtGui.QFileDialog.ShowDirsOnly, True)
 
+        # Ensure sidebar exists
+        if not hasattr(self, 'fileDock'):
+            self.layoutFolderSidebar()
+
         folderPath = ""
         if folder.exec_():
             for folderPath in folder.selectedFiles():
@@ -101,24 +106,30 @@ class Example(QtGui.QMainWindow):
 
         dirs = os.listdir(self.folder_path)
         for file in dirs:
-          self.list.addItem(file)
+          if os.path.isfile(os.path.join(self.folder_path,file)):
+            self.list.addItem(file)
 
     def showSelectedFile(self):
-
         self.selectedfile = self.list.currentItem().text()
-        print self.selectedfile
         
-        selectedfilestr = str(self.selectedfile)
-        selectedfilepath = "%s%s" %(self.folder_path, selectedfilestr)
-        print selectedfilepath
-        clickedfile= QtGui.QFileDialog.getOpenFileName(self, 'Open File', selectedfilepath)
+        selectedFileStr = str(self.selectedfile)
+        selectedFilePath = "%s%s" %(self.folder_path, selectedFileStr)
+
+        time, current, trigger = self.readFile(selectedFilePath)
+        self.calculateStats(time, current, trigger)
+        self.showPlot(time, current, trigger)
+
+    def openFile(self):
+        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
+        time, current, trigger = self.readFile(fname)
+        self.calculateStats(time, current, trigger)
+        self.showPlot(time, current, trigger)
         
-        f1 = open(clickedfile, 'rb')
-        
-    def calculatestats(self, time, current, trigger):
-      avgtriggercurrent = 0
+    def calculateStats(self, time, current, trigger):
       triggerThreshold = 1.0
+
       i = 0
+      avgtriggercurrent = 0
 
       for index, triggerValue in enumerate(trigger):
         if triggerValue >= triggerThreshold:
@@ -126,11 +137,10 @@ class Example(QtGui.QMainWindow):
           i += 1
 
       avgtriggercurrent = avgtriggercurrent/i
-      avgCurrent = avgcurrent/count
       avgCurrent = np.average(current)
           
       ptrig = float(avgtriggercurrent * 5.1)
-      p = float(avgcurrent * 5.1)
+      p = float(avgCurrent * 5.1)
 
       ptrigstring = str(ptrig)
       pstring = str(p)
@@ -198,33 +208,20 @@ class Example(QtGui.QMainWindow):
         self.statsBox.setLayout(self.vbox)
         self.statsDock.setWidget(self.statsBox)
 
-    def showDialog(self):
-
-        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
-        
+    def readFile(self, fname):
         f = open(fname, 'rb')
-        xTime = []
-        yCurrent = []
-        yTrigger = []
+        time = []
+        current = []
+        trigger = []
         with f:
           self.reader = csv.reader(f)
-          avgcurrent = 0
-          avgtriggercurrent = 0
-          triggerthreshold = 1
-          count = 0
-          i = 0
+
           for row in self.reader:
-            xTime.extend([float(row[0])])
-            yCurrent.extend([float(row[3])])
-            yTrigger.extend([float(row[6])])
+            time.extend([float(row[0])])
+            current.extend([float(row[3])])
+            trigger.extend([float(row[6])])
 
-          self.calculatestats(xTime, yCurrent, yTrigger)
-          self.showPlot(xTime, yCurrent, yTrigger)
-
-          self.region = pg.LinearRegionItem()
-          self.plot1.addItem(self.region)
-          self.region.setRegion([0.1, 0.4])
-          self.region.sigRegionChanged.connect(self.regionChanged)
+        return (time, current, trigger)
 
     def regionChanged(self):
         minX, maxX = self.region.getRegion()
@@ -235,6 +232,11 @@ class Example(QtGui.QMainWindow):
         self.plot1 = self.graphwin.addPlot(title="Plot of current vs time", labels={'left':"Current(mA)", 'bottom':"Time(s)"})
         self.plot1.plot(time, current, pen=(0,255,0))
         self.plot1.plot(time, trigger, pen=(255,0,0))
+
+        self.region = pg.LinearRegionItem()
+        self.plot1.addItem(self.region)
+        self.region.setRegion([0.1, 0.4])
+        self.region.sigRegionChanged.connect(self.regionChanged)
 
 def main():
     
