@@ -30,6 +30,7 @@ class Example(QtGui.QMainWindow):
         # Add a dock to the left of the plot
         self.fileDock = QtGui.QDockWidget(self)
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.fileDock)
+        
 
         # Create a status bar
         self.statusBar()
@@ -69,34 +70,38 @@ class Example(QtGui.QMainWindow):
         self.setWindowTitle('Data Analysis') 
 
         self.layoutStatistics()
+        self.layoutFolderSidebar()
         self.show()
-    
+
+    def layoutFolderSidebar(self):
+        self.list = QtGui.QListWidget(self.fileDock)
+
+        self.filelist = QtGui.QGroupBox(self.fileDock)
+        self.filelistlayout = QtGui.QVBoxLayout()
+        self.filelistlayout.addWidget(self.list)
+        self.filelistlayout.setContentsMargins(0,0,0,0)
+
+        self.filelist.setLayout(self.filelistlayout)
+        self.filelist.setContentsMargins(0,0,0,0)
+
+        self.fileDock.setWidget(self.filelist)
+        self.filelist.setMinimumSize(150, 50)
+        self.list.itemDoubleClicked.connect(self.showSelectedFile)
+
     def openFolder(self):
-        folder = QtGui.QFileDialog(self)
+        # Prompt for a folder
+        folder = QtGui.QFileDialog(self, "Open Folder", ".")
         folder.setFileMode(QtGui.QFileDialog.Directory)
         folder.setOption(QtGui.QFileDialog.ShowDirsOnly, True)
 
-        self.list = QtGui.QListWidget(self.fileDock)
-        
-        filepath = ""
+        folderPath = ""
         if folder.exec_():
-            for filepath in folder.selectedFiles():
-                print filepath
-                self.folder_path = "%s/" %(filepath)
+            for folderPath in folder.selectedFiles():
+                self.folder_path = "%s/" %(folderPath)
+
         dirs = os.listdir(self.folder_path)
         for file in dirs:
-          print file
           self.list.addItem(file)
-           
-
-        filelist = QtGui.QGroupBox(self.fileDock)
-        filelistlayout = QtGui.QVBoxLayout()
-        filelistlayout.addWidget(self.list)
-
-        filelist.setLayout(filelistlayout)
-        self.fileDock.setWidget(filelist)
-
-        self.list.itemDoubleClicked.connect(self.showSelectedFile)
 
     def showSelectedFile(self):
 
@@ -110,24 +115,19 @@ class Example(QtGui.QMainWindow):
         
         f1 = open(clickedfile, 'rb')
         
-    def calculatestats(self,time,current,trigger):
-      avgcurrent = 0
+    def calculatestats(self, time, current, trigger):
       avgtriggercurrent = 0
-      triggerthreshold = 1
-      count = 0
+      triggerThreshold = 1.0
       i = 0
 
-      for index, triggervalue in enumerate(trigger):
-        if triggervalue >= triggerthreshold:
+      for index, triggerValue in enumerate(trigger):
+        if triggerValue >= triggerThreshold:
           avgtriggercurrent += current[index]
-          i+= 1
-          
-          
-            
-        count+= 1
-        avgcurrent+= current[index]
+          i += 1
+
       avgtriggercurrent = avgtriggercurrent/i
-      avgcurrent = avgcurrent/count
+      avgCurrent = avgcurrent/count
+      avgCurrent = np.average(current)
           
       ptrig = float(avgtriggercurrent * 5.1)
       p = float(avgcurrent * 5.1)
@@ -217,22 +217,8 @@ class Example(QtGui.QMainWindow):
             xTime.extend([float(row[0])])
             yCurrent.extend([float(row[3])])
             yTrigger.extend([float(row[6])])
-##            if float(row[6]) >= triggerthreshold:
-##              avgtriggercurrent += float(row[3])
-##              i+= 1
-##          
-##            
-##            count+= 1
-##            avgcurrent+= float(row[3])
-##          avgtriggercurrent = avgtriggercurrent/i
-##          avgcurrent = avgcurrent/count
-##          
-##          ptrig = float(avgtriggercurrent * 5.1)
-##          p = float(avgcurrent * 5.1)
-##
-##          ptrigstring = str(ptrig)
-##          pstring = str(p)
-          self.calculatestats(xTime,yCurrent,yTrigger)
+
+          self.calculatestats(xTime, yCurrent, yTrigger)
           self.showPlot(xTime, yCurrent, yTrigger)
 
           self.region = pg.LinearRegionItem()
