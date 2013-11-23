@@ -130,79 +130,68 @@ class Example(QtGui.QMainWindow):
         print selectedfilepath
         clickedfile= QtGui.QFileDialog.getOpenFileName(self, 'Open File', selectedfilepath)
         
-        
-        f1 = open(clickedfile, 'rb')
-
-
-
-                
-        
-
+        f1 = open(clickedfile, 'rb')  
 
         # def updatePlot(self, ):                                 
     def updateStatistics(self, minCurrent, maxCurrent):
 
         # Statistics for the whole window
-        wholeWindowBox = QtGui.QGroupBox(self.dock1)
-        wholeWindowBox.setFlat(True)
-        wholeWindowBox.setTitle("Whole File")
+        self.wholeWindowBox = QtGui.QGroupBox(self.dock1)
+        self.wholeWindowBox.setFlat(True)
+        self.wholeWindowBox.setTitle("Whole File")
 
-        labelMin = QtGui.QLabel(self.dock1)
-        labelMin.setText("Min Current: %.2f mA" % (minCurrent))
+        self.fileLabelMin = QtGui.QLabel(self.dock1)
+        self.fileLabelMin.setText("Min Current: %.2f mA" % (minCurrent))
 
-        labelMax = QtGui.QLabel(self.dock1)
-        labelMax.setText("Max Current: %.2f mA" % (maxCurrent))
+        self.fileLabelMax = QtGui.QLabel(self.dock1)
+        self.fileLabelMax.setText("Max Current: %.2f mA" % (maxCurrent))
 
-        wholeLayout = QtGui.QVBoxLayout()
-        wholeLayout.addWidget(labelMin)
-        wholeLayout.addWidget(labelMax)
-     #   wholeLayout.addStretch(1)
-        wholeWindowBox.setLayout(wholeLayout)
+        self.wholeLayout = QtGui.QVBoxLayout()
+        self.wholeLayout.addWidget(self.fileLabelMin)
+        self.wholeLayout.addWidget(self.fileLabelMax)
+        self.wholeWindowBox.setLayout(self.wholeLayout)
 
         # Statistics for just the area under the trigger
-        triggerBox = QtGui.QGroupBox(self.dock1)
-        triggerBox.setFlat(True)
-        triggerBox.setTitle("Trigger Area(s)")
+        self.triggerBox = QtGui.QGroupBox(self.dock1)
+        self.triggerBox.setFlat(True)
+        self.triggerBox.setTitle("Trigger Area(s)")
 
-        labelMin = QtGui.QLabel(self.dock1)
-        labelMin.setText("Min Current: %.2f mA" % (minCurrent))
+        self.triggerLabelMin = QtGui.QLabel(self.dock1)
+        self.triggerLabelMin.setText("Min Current: %.2f mA" % (minCurrent))
 
-        labelMax = QtGui.QLabel(self.dock1)
-        labelMax.setText("Max Current: %.2f mA" % (maxCurrent))
+        self.triggerLabelMax = QtGui.QLabel(self.dock1)
+        self.triggerLabelMax.setText("Max Current: %.2f mA" % (maxCurrent))
 
-        triggerLayout = QtGui.QVBoxLayout()
-        triggerLayout.addWidget(labelMin)
-        triggerLayout.addWidget(labelMax)
-      #  triggerLayout.addStretch(1)
-        triggerBox.setLayout(triggerLayout)
+        self.triggerLayout = QtGui.QVBoxLayout()
+        self.triggerLayout.addWidget(self.triggerLabelMin)
+        self.triggerLayout.addWidget(self.triggerLabelMax)
+        self.triggerBox.setLayout(self.triggerLayout)
 
         # Statistics for the area between the selectors
-        selectorBox = QtGui.QGroupBox(self.dock1)
-        selectorBox.setFlat(True)
-        selectorBox.setTitle("Selection Area")
+        self.regionBox = QtGui.QGroupBox(self.dock1)
+        self.regionBox.setFlat(True)
+        self.regionBox.setTitle("Selection Area")
 
-        labelMin = QtGui.QLabel(self.dock1)
-        labelMin.setText("Min Current: %.2f mA" % (minCurrent))
+        self.regionLabelMin = QtGui.QLabel(self.dock1)
+        self.regionLabelMin.setText("Min Current: %.2f mA" % (minCurrent))
 
-        labelMax = QtGui.QLabel(self.dock1)
-        labelMax.setText("Max Current: %.2f mA" % (maxCurrent))
+        self.regionLabelMax = QtGui.QLabel(self.dock1)
+        self.regionLabelMax.setText("Max Current: %.2f mA" % (maxCurrent))
 
-        selectorLayout = QtGui.QVBoxLayout()
-        selectorLayout.addWidget(labelMin)
-        selectorLayout.addWidget(labelMax)
-      #  triggerLayout.addStretch(1)
-        selectorBox.setLayout(selectorLayout)
+        self.selectorLayout = QtGui.QVBoxLayout()
+        self.selectorLayout.addWidget(self.regionLabelMin)
+        self.selectorLayout.addWidget(self.regionLabelMax)
+        self.regionBox.setLayout(self.selectorLayout)
 
-        statsBox = QtGui.QGroupBox(self.dock1)
-        vbox = QtGui.QVBoxLayout()
-        vbox.addWidget(wholeWindowBox)
-        vbox.addWidget(triggerBox)
-        vbox.addWidget(selectorBox)
-        vbox.addStretch(1)
+        self.statsBox = QtGui.QGroupBox(self.dock1)
+        self.vbox = QtGui.QVBoxLayout()
+        self.vbox.addWidget(self.wholeWindowBox)
+        self.vbox.addWidget(self.triggerBox)
+        self.vbox.addWidget(self.regionBox)
+        self.vbox.addStretch(1)
 
-        statsBox.setLayout(vbox)
-        self.dock1.setWidget(statsBox)
-
+        self.statsBox.setLayout(self.vbox)
+        self.dock1.setWidget(self.statsBox)
 
     def showDialog(self):
 
@@ -239,26 +228,21 @@ class Example(QtGui.QMainWindow):
           ptrigstring = str(ptrig)
           pstring = str(p)
 
-          self.dock1.setTitleBarWidget(QtGui.QLabel('Power under the trigger'))
-          self.dock1.setWidget(QtGui.QLabel(ptrigstring))
-          self.dock2.setTitleBarWidget(QtGui.QLabel('Power'))
-          self.dock2.setWidget(QtGui.QLabel(pstring))
-          print ptrig
-          print p
-
           self.updateStatistics(3.14, 6.28)
 
-          p1 = self.graphwin.addPlot(title="Main plot", labels={'left':"Current (mA)", 'bottom':"Time (s)"})
-          p1.plot(xTime, yCurrent, pen=(0,255,0))
-          p1.plot(xTime, yTrigger, pen=(255,0,0))
+          self.p1 = self.graphwin.addPlot(title="Main plot", labels={'left':"Current (mA)", 'bottom':"Time (s)"})
+          self.p1.plot(xTime, yCurrent, pen=(0,255,0))
+          self.p1.plot(xTime, yTrigger, pen=(255,0,0))
 
+          self.region = pg.LinearRegionItem()
+          self.p1.addItem(self.region)
+          self.region.setRegion([0.1, 0.4])
+          self.region.sigRegionChanged.connect(self.regionChanged)
 
-   #def updatePlot(self, ):                                 
-        
-
-          selector = pg.LinearRegionItem()
-          p1.addItem(selector)
-          selector.setRegion(0.1, 0.4)
+    def regionChanged(self):
+      minX, maxX = self.region.getRegion()
+      self.regionLabelMin.setText("Region Min: %.3f" % (minX))
+      self.regionLabelMax.setText("Region Max: %.3f" % (maxX))
 
 
 def main():
