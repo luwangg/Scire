@@ -118,9 +118,9 @@ class Example(QtGui.QMainWindow):
         self.dock3.setWidget(filelist)
 
         #btn.clicked.connect(self.showfile)
-        self.list.itemDoubleClicked.connect(self.showfile)
+        self.list.itemDoubleClicked.connect(self.showselectedfile)
 
-    def showfile(self):
+    def showselectedfile(self):
 
         self.selectedfile = self.list.currentItem().text()
         print self.selectedfile
@@ -230,12 +230,10 @@ class Example(QtGui.QMainWindow):
 
           self.updateStatistics(3.14, 6.28)
 
-          self.p1 = self.graphwin.addPlot(title="Main plot", labels={'left':"Current (mA)", 'bottom':"Time (s)"})
-          self.p1.plot(xTime, yCurrent, pen=(0,255,0))
-          self.p1.plot(xTime, yTrigger, pen=(255,0,0))
+          self.showPlot(xTime,yCurrent,yTrigger)
 
           self.region = pg.LinearRegionItem()
-          self.p1.addItem(self.region)
+          self.plot1.addItem(self.region)
           self.region.setRegion([0.1, 0.4])
           self.region.sigRegionChanged.connect(self.regionChanged)
 
@@ -243,6 +241,12 @@ class Example(QtGui.QMainWindow):
       minX, maxX = self.region.getRegion()
       self.regionLabelMin.setText("Region Min: %.3f" % (minX))
       self.regionLabelMax.setText("Region Max: %.3f" % (maxX))
+
+    def showPlot(self,time,current,trigger):
+        self.plot1 = self.graphwin.addPlot(title="Plot of current vs time", labels={'left':"Current(mA)", 'bottom':"Time(s)"})
+        self.plot1.plot(time, current, pen=(0,255,0))
+        self.plot1.plot(time, trigger, pen=(255,0,0))
+        
 
 
 def main():
