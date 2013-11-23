@@ -108,7 +108,35 @@ class Example(QtGui.QMainWindow):
         print selectedfilepath
         clickedfile= QtGui.QFileDialog.getOpenFileName(self, 'Open File', selectedfilepath)
         
-        f1 = open(clickedfile, 'rb')  
+        f1 = open(clickedfile, 'rb')
+        
+    def calculatestats(self,time,current,trigger):
+      avgcurrent = 0
+      avgtriggercurrent = 0
+      triggerthreshold = 1
+      count = 0
+      i = 0
+
+      for index, triggervalue in enumerate(trigger):
+        if triggervalue >= triggerthreshold:
+          avgtriggercurrent += current[index]
+          i+= 1
+          
+          
+            
+        count+= 1
+        avgcurrent+= current[index]
+      avgtriggercurrent = avgtriggercurrent/i
+      avgcurrent = avgcurrent/count
+          
+      ptrig = float(avgtriggercurrent * 5.1)
+      p = float(avgcurrent * 5.1)
+
+      ptrigstring = str(ptrig)
+      pstring = str(p)
+
+      print ptrigstring
+      print pstring
                                
     def layoutStatistics(self):
 
@@ -189,22 +217,22 @@ class Example(QtGui.QMainWindow):
             xTime.extend([float(row[0])])
             yCurrent.extend([float(row[3])])
             yTrigger.extend([float(row[6])])
-            if float(row[6]) >= triggerthreshold:
-              avgtriggercurrent += float(row[3])
-              i+= 1
-          
-            
-            count+= 1
-            avgcurrent+= float(row[3])
-          avgtriggercurrent = avgtriggercurrent/i
-          avgcurrent = avgcurrent/count
-          
-          ptrig = float(avgtriggercurrent * 5.1)
-          p = float(avgcurrent * 5.1)
-
-          ptrigstring = str(ptrig)
-          pstring = str(p)
-
+##            if float(row[6]) >= triggerthreshold:
+##              avgtriggercurrent += float(row[3])
+##              i+= 1
+##          
+##            
+##            count+= 1
+##            avgcurrent+= float(row[3])
+##          avgtriggercurrent = avgtriggercurrent/i
+##          avgcurrent = avgcurrent/count
+##          
+##          ptrig = float(avgtriggercurrent * 5.1)
+##          p = float(avgcurrent * 5.1)
+##
+##          ptrigstring = str(ptrig)
+##          pstring = str(p)
+          self.calculatestats(xTime,yCurrent,yTrigger)
           self.showPlot(xTime, yCurrent, yTrigger)
 
           self.region = pg.LinearRegionItem()
