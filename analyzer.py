@@ -118,9 +118,9 @@ class Example(QtGui.QMainWindow):
         self.dock3.setWidget(filelist)
 
         #btn.clicked.connect(self.showfile)
-        self.list.itemDoubleClicked.connect(self.showfile)
+        self.list.itemDoubleClicked.connect(self.showselectedfile)
 
-    def showfile(self):
+    def showselectedfile(self):
 
         self.selectedfile = self.list.currentItem().text()
         print self.selectedfile
@@ -248,17 +248,23 @@ class Example(QtGui.QMainWindow):
 
           self.updateStatistics(3.14, 6.28)
 
-          p1 = self.graphwin.addPlot(title="Main plot", labels={'left':"Current (mA)", 'bottom':"Time (s)"})
-          p1.plot(xTime, yCurrent, pen=(0,255,0))
-          p1.plot(xTime, yTrigger, pen=(255,0,0))
+       
+
+          self.showPlot(xTime,yCurrent,yTrigger)
 
 
-   #def updatePlot(self, ):                                 
+                                  
         
 
           selector = pg.LinearRegionItem()
           p1.addItem(selector)
           selector.setRegion(0.1, 0.4)
+
+    def showPlot(self,time,current,trigger):
+        plot1 = self.graphwin.addPlot(title="Plot of current vs time", labels={'left':"Current(mA)", 'bottom':"Time(s)"})
+        plot1.plot(time, current, pen=(0,255,0))
+        plot1.plot(time, trigger, pen=(255,0,0))
+        
 
 
 def main():
