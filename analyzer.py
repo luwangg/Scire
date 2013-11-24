@@ -129,11 +129,14 @@ class Example(QtGui.QMainWindow):
     def openFile(self):
         fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
         time, current, trigger = self.readFile(fname)
-        self.calculateTriggerStats(time, current, trigger)
-        self.calculateStats(time, current)
-        self.showPlot(time, current, trigger)
-        
 
+        avgCurrent, stdevCurrent, varCurrent = self.calculateTriggerStats(time, current, trigger)
+        self.setTriggerStats(avgCurrent, stdevCurrent, varCurrent)
+
+        avgCurrent, stdevCurrent, varCurrent = self.calculateStats(time, current)
+        self.setFileStats(avgCurrent, stdevCurrent, varCurrent)
+
+        self.showPlot(time, current, trigger)
         
     def calculateTriggerStats(self, time, current, trigger):
       triggerThreshold = 1.0
@@ -143,19 +146,18 @@ class Example(QtGui.QMainWindow):
         if triggerValue >= triggerThreshold:
           triggerCurrent.extend([current[index]])
 
-      avgTriggerCurrent = np.average(triggerCurrent)
-      stdevTriggerCurrent = np.std(triggerCurrent)
-      varTriggerCurrent = np.var(triggerCurrent)
+      avgCurrent = np.average(triggerCurrent)
+      stdevCurrent = np.std(triggerCurrent)
+      varCurrent = np.var(triggerCurrent)
 
-      #return (avgTriggerCurrent, stdevTriggerCurrent, varTriggerCurrent)
-      self.setTriggerStats(avgTriggerCurrent, stdevTriggerCurrent, varTriggerCurrent)
+      return (avgCurrent, stdevCurrent, varCurrent)
 
     def calculateStats(self, time, current):
       avgCurrent = np.average(current)
       stdevCurrent = np.std(current)
       varCurrent = np.var(current)
-      self.setFileStats(avgCurrent, stdevCurrent, varCurrent)
-      #return (avgCurrent, stdevCurrent, varCurrent)
+      
+      return (avgCurrent, stdevCurrent, varCurrent)
 
     def highlightTriggerRegions(self, time, trigger):
       triggerThreshold = 1.0
@@ -192,12 +194,7 @@ class Example(QtGui.QMainWindow):
         self.triggerBox.setTitle("Trigger Area(s)")
 
         self.triggerLabelMin = QtGui.QLabel(self.statsDock)
-        
-
         self.triggerLabelMax = QtGui.QLabel(self.statsDock)
-
-        self.triggerLabelVar = QtGui.QLabel(self.statsDock)
-
         self.triggerLabelVar = QtGui.QLabel(self.statsDock)
 
         self.triggerLayout = QtGui.QVBoxLayout()
@@ -212,14 +209,14 @@ class Example(QtGui.QMainWindow):
         self.regionBox.setTitle("Selection Area")
 
         self.regionLabelMin = QtGui.QLabel(self.statsDock)
-        self.regionLabelMin.setText("Min Current: %.2f mA" % (0))
-
         self.regionLabelMax = QtGui.QLabel(self.statsDock)
-        self.regionLabelMax.setText("Max Current: %.2f mA" % (0))
+        self.regionLabelVar = QtGui.QLabel(self.statsDock)
+        self.regionLabelVar.setText("Max Current: %.2f mA" % (0))
 
         self.selectorLayout = QtGui.QVBoxLayout()
         self.selectorLayout.addWidget(self.regionLabelMin)
         self.selectorLayout.addWidget(self.regionLabelMax)
+        self.selectorLayout.addWidget(self.regionLabelVar)
         self.regionBox.setLayout(self.selectorLayout)
 
         self.statsBox = QtGui.QGroupBox(self.statsDock)
@@ -241,54 +238,57 @@ class Example(QtGui.QMainWindow):
           self.reader = csv.reader(f)
 
           for row in self.reader:
-
-
-          
-
             time.extend([float(row[0])])
             current.extend([float(row[3])])
             trigger.extend([float(row[6])])
 
-
         return (time, current, trigger)
 
-    def regionChanged(self):
+
+    def setRegionStats(self):
         minX, maxX = self.region.getRegion()
-        self.regionLabelMin.setText("Region Min: %.3f" % (minX))
-        self.regionLabelMax.setText("Region Max: %.3f" % (maxX))
-    #Get current statistics
-    def setFileStats(self,avg,mean,stddev):
-        averagecurrent = float(avg)
-        stddeviation = float(stddev)
-        variance = float(mean)
-        print averagecurrent
-        print stddeviation
-        self.fileLabelMin.setText("Average Current: %.2f mA" %(averagecurrent))
-        self.fileLabelMax.setText("Standard Deviation: %.2f mA" %(stddeviation))
-        self.fileLabelVar.setText("Variance: %.2f mA" %(variance))
-    
 
-    def setTriggerStats(self,avg,mean,stddev):
-        avgcurrent = float(avg)
-        stddeviation = float(stddev)
-        var = float(mean)
-        self.triggerLabelMin.setText("Average Current(under trigger): %.2f mA" %(avgcurrent))
-        self.triggerLabelMax.setText("Standard Deviation: %.2f mA" %(stddeviation))
-        self.triggerLabelVar.setText("Variance: %.2f mA" %(var))
+        rMinIndex = 0
+        rMaxIndex = 0
 
-        
-        
+        for index, t in enumerate(self.plotDataX):
+          if t <= minX:
+            rMinIndex = index
+          if t <= maxX:
+            rMaxIndex = index
+
+        avgCurrent, stdevCurrent, varCurrent = self.calculateStats(self.plotDataX[rMinIndex:rMaxIndex], self.plotDataY[rMinIndex:rMaxIndex])
+
+        self.regionLabelMin.setText("Average Current: %.3f mA" % avgCurrent)
+        self.regionLabelMax.setText("Standard Deviation: %.3f mA" % stdevCurrent)
+        self.regionLabelVar.setText("Variance: %.3f mA" % varCurrent)
+
+    # Set statistics for the entire file
+    def setFileStats(self, avg, stddev, var):
+        self.fileLabelMin.setText("Average Current: %.2f mA" % avg)
+        self.fileLabelMax.setText("Standard Deviation: %.2f mA" % stddev)
+        self.fileLabelVar.setText("Variance: %.2f mA" % var)
+
+    # Set statistics for the area(s) under the trigger signal
+    def setTriggerStats(self, avg, stddev, var):
+        self.triggerLabelMin.setText("Average Current: %.2f mA" % avg)
+        self.triggerLabelMax.setText("Standard Deviation: %.2f mA" % stddev)
+        self.triggerLabelVar.setText("Variance: %.2f mA" % var)
 
     def showPlot(self, time, current, trigger):
+        self.plotDataX = time
+        self.plotDataY = current
+
         if not hasattr(self, 'plot1'):
           self.plot1 = self.graphwin.addPlot(title="Plot of current vs time", labels={'left':"Current(mA)", 'bottom':"Time(s)"})
           self.region = pg.LinearRegionItem()
           self.plot1.addItem(self.region)
-          self.region.sigRegionChanged.connect(self.regionChanged)
+          self.region.sigRegionChanged.connect(self.setRegionStats)
+          self.plot1.showGrid(y=True)
 
         self.plot1.plot(time, current, pen=(0,255,0))
         self.plot1.plot(time, trigger, pen=(255,0,0))
-
+        self.plot1.enableAutoRange(enable=True)
         self.region.setRegion([0.1, 0.4])
 
 def main():
@@ -298,6 +298,8 @@ def main():
     #sys.exit(app.exec_())
     if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
       app.exec_()
+      app.deleteLater()
+      app.exit()
 
 if __name__ == '__main__':
     main()
