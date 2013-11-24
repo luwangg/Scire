@@ -18,20 +18,15 @@ class Example(QtGui.QMainWindow):
         self.initUI()
         
     def initUI(self):               
-        self.setGeometry(300, 300, 1000, 600)
+        self.setGeometry(300, 300, 1200, 800)
      
         self.graphwin = pg.GraphicsWindow(title="Current Sense Analysis")
-        self.graphwin.resize(600,800)
+  #      self.graphwin.resize(600,800)
         self.graphwin.setWindowTitle('Current vs time')
         self.setCentralWidget(self.graphwin)
 
         # Create a status bar
         self.statusBar()
-
-        # Add a dock to the right of the plot
-        self.statsDock = QtGui.QDockWidget(self)
-        self.statsDock.setWindowTitle("Statistics")
-        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.statsDock)
 
         # Create a menu bar
         menubar = self.menuBar()
@@ -64,7 +59,8 @@ class Example(QtGui.QMainWindow):
         menuFile.addAction(exitAction)
 
         self.setWindowTitle('Data Analysis') 
-        self.layoutStatistics()    
+        self.layoutStatistics()  
+        self.layoutControls()
         self.show()
 
     def layoutFolderSidebar(self):
@@ -88,17 +84,25 @@ class Example(QtGui.QMainWindow):
 
     def openFile(self):
         fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
-        time, current, trigger = self.readFile(fname)
+        self.plotFile(fname)
 
-        avgCurrent, stdevCurrent, varCurrent = self.calculateTriggerStats(time, current, trigger)
-        self.setTriggerStats(avgCurrent, stdevCurrent, varCurrent)
+    def showSelectedFile(self):
+        fname = self.list.currentItem().text()
+        fullPath = "%s%s" %(self.folder_path, fname)
+        self.plotFile(fullPath)
+
+    def plotFile(self, fullPath):
+        time, current, trigger = self.readFile(fullPath)
 
         avgCurrent, stdevCurrent, varCurrent = self.calculateStats(time, current)
         self.setFileStats(avgCurrent, stdevCurrent, varCurrent)
 
+        avgCurrentTrig, stddevCurrentTrig, varCurrentTrig = self.calculateTriggerStats(time, current, trigger)
+        self.setTriggerStats(avgCurrentTrig, stddevCurrentTrig, varCurrentTrig)
+
         self.showPlot(time, current, trigger)
         self.highlightTriggerRegions(time, trigger)
-        
+
     def openFolder(self):
         # Prompt for a folder
         folder = QtGui.QFileDialog(self, "Open Folder", ".")
@@ -112,6 +116,7 @@ class Example(QtGui.QMainWindow):
         # Ensure sidebar exists
         if not hasattr(self, 'fileDock'):
             self.layoutFolderSidebar()
+            self.layoutStatsTable()
 
         dirs = os.listdir(self.folder_path)
         self.list.clear()
@@ -119,22 +124,10 @@ class Example(QtGui.QMainWindow):
           if os.path.isfile(os.path.join(self.folder_path,file)):
             self.list.addItem(file)
 
+        self.fileStats = np.zeros([int(self.list.count()), 3])
+
         self.fileDock.updateGeometry()
-
-    def showSelectedFile(self):
-        self.selectedfile = self.list.currentItem().text()
-
-        selectedFileStr = str(self.selectedfile)
-        selectedFilePath = "%s%s" %(self.folder_path, selectedFileStr)
-
-        time, current, trigger = self.readFile(selectedFilePath)
-        avgCurrent, stdevCurrent, varCurrent = self.calculateStats(time, current)
-        self.setFileStats(avgCurrent, stdevCurrent, varCurrent)
-
-        avgCurrentTrig, stddevCurrentTrig, varCurrentTrig = self.calculateTriggerStats(time, current, trigger)
-        self.setTriggerStats(avgCurrentTrig, stddevCurrentTrig, varCurrentTrig)
-        self.showPlot(time, current, trigger)
-        self.highlightTriggerRegions(time, trigger)
+        self.populateStatsTable()
 
     def calculateTriggerStats(self, time, current, trigger):
       triggerThreshold = 1.0
@@ -170,8 +163,12 @@ class Example(QtGui.QMainWindow):
           self.plot1.addItem(self.regionT)
           minX = 0
 
-
     def layoutStatistics(self):
+        # Add a dock to the right of the plot
+        self.statsDock = QtGui.QDockWidget(self)
+        self.statsDock.setWindowTitle("Statistics")
+        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.statsDock)
+
         # Statistics for the whole window
         self.wholeWindowBox = QtGui.QGroupBox(self.statsDock)
         self.wholeWindowBox.setFlat(True)
@@ -180,7 +177,6 @@ class Example(QtGui.QMainWindow):
         self.fileLabelMin = QtGui.QLabel(self.statsDock)
         self.fileLabelMax = QtGui.QLabel(self.statsDock)
         self.fileLabelVar = QtGui.QLabel(self.statsDock)
-        
 
         self.wholeLayout = QtGui.QVBoxLayout()
         self.wholeLayout.addWidget(self.fileLabelMin)
@@ -240,6 +236,60 @@ class Example(QtGui.QMainWindow):
         self.statsBox.setLayout(self.vbox)
         self.statsDock.setWidget(self.statsBox)
 
+    def layoutControls(self):
+        self.controlDock = QtGui.QDockWidget(self)
+        self.controlDock.setWindowTitle("Controls")
+        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, self.controlDock)
+
+        self.controlBox = QtGui.QGroupBox(self.controlDock)
+        self.controlVBox = QtGui.QVBoxLayout()
+        self.controlVBox.addStretch(1)
+
+        self.controlBox.setLayout(self.controlVBox)
+        self.controlDock.setWidget(self.controlBox)
+
+    def layoutStatsTable(self):
+        self.tableDock = QtGui.QDockWidget(self)
+        self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.tableDock)
+
+        self.table = QtGui.QTableWidget()
+        self.table.setColumnCount(3) # Number of stats
+
+        self.tableDock.setWidget(self.table)
+
+    def populateStatsTable(self):
+        headers = ["Avg Current", "Stdev Current", "Current Variance"]
+        self.table.setHorizontalHeaderLabels(headers)
+        self.table.resizeColumnsToContents()
+
+        self.table.setRowCount(self.list.count())
+
+        fileNames = []
+        for index in xrange(self.list.count()):
+          fileNames.append(self.list.item(index))
+        files = [i.text() for i in fileNames]
+
+        self.table.setVerticalHeaderLabels(files)
+        self.table.setItem(1,1,QtGui.QTableWidgetItem("Hello"))
+
+        for index, fileName in enumerate(files):
+          selectedFilePath = "%s%s" % (self.folder_path, fileName)
+
+          time, current, trigger = self.readFile(selectedFilePath)
+          avgCurrent, stdevCurrent, varCurrent = self.calculateStats(time, current)
+
+          self.table.setItem(index, 0, QtGui.QTableWidgetItem("%.3f" % avgCurrent))
+          self.table.setItem(index, 1, QtGui.QTableWidgetItem("%.3f" % stdevCurrent))
+          self.table.setItem(index, 2, QtGui.QTableWidgetItem("%.3f" % varCurrent))
+        
+        self.table.updateGeometry()
+        self.table.verticalHeader().sectionDoubleClicked.connect(self.showFileFromTable)
+
+    def showFileFromTable(self, index):
+        fname = self.table.verticalHeaderItem(index).text()
+        fullPath = "%s%s" %(self.folder_path, fname)
+        self.plotFile(fullPath)
+
     def readFile(self, fname):
         f = open(fname, 'rb')
         time = []
@@ -298,7 +348,7 @@ class Example(QtGui.QMainWindow):
           self.plot1.showGrid(y=True)
 
         self.plot1.plot(time, current, pen=(0,255,0))
-        #self.plot1.plot(time, trigger, pen=(255,0,0))
+        # self.plot1.plot(time, trigger, pen=(255,0,0))
         self.plot1.enableAutoRange(enable=True)
         self.region.setRegion([0.1, 0.2])
 
