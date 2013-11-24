@@ -24,12 +24,6 @@ class Example(QtGui.QMainWindow):
         self.graphwin.resize(600,800)
         self.graphwin.setWindowTitle('Current vs time')
         self.setCentralWidget(self.graphwin)
-        
-        self.folder_path = ""
-
-        # Add a dock to the left of the plot
-        self.fileDock = QtGui.QDockWidget(self)
-        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.fileDock)
 
         # Create a status bar
         self.statusBar()
@@ -46,7 +40,7 @@ class Example(QtGui.QMainWindow):
         openFile = QtGui.QAction(QtGui.QIcon('open.png'), 'Open File', self)
         openFile.setShortcut('Ctrl+O')
         openFile.setStatusTip('Open new File')
-        openFile.triggered.connect(self.showDialog)
+        openFile.triggered.connect(self.openFile)
 
         # Add button and shortcut to open folders
         openFolder = QtGui.QAction(QtGui.QIcon('open.png'), 'Open Folder', self)
@@ -69,103 +63,122 @@ class Example(QtGui.QMainWindow):
         self.setWindowTitle('Data Analysis') 
 
         self.layoutStatistics()
+
+        self.fileLabelMin.setText("Average Current: %.2f mA" % (0))
+        self.fileLabelMax.setText("Standard Deviation: %.2f mA" % (0))
+        self.fileLabelVar.setText("Variance: %.2f mA" %(0))
+        
+        
         self.show()
-    
+
+    def layoutFolderSidebar(self):
+        # Add a dock to the left of the plot
+        self.fileDock = QtGui.QDockWidget(self)
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.fileDock)
+
+        self.list = QtGui.QListWidget(self.fileDock)
+
+        self.filelist = QtGui.QGroupBox(self.fileDock)
+        self.filelistlayout = QtGui.QVBoxLayout()
+        self.filelistlayout.addWidget(self.list)
+        self.filelistlayout.setContentsMargins(0,0,0,0)
+
+        self.filelist.setLayout(self.filelistlayout)
+        self.filelist.setContentsMargins(0,0,0,0)
+
+        self.fileDock.setWidget(self.filelist)
+        self.filelist.setMinimumSize(150, 50)
+        self.list.itemDoubleClicked.connect(self.showSelectedFile)
+
     def openFolder(self):
-        folder = QtGui.QFileDialog(self)
+        # Prompt for a folder
+        folder = QtGui.QFileDialog(self, "Open Folder", ".")
         folder.setFileMode(QtGui.QFileDialog.Directory)
         folder.setOption(QtGui.QFileDialog.ShowDirsOnly, True)
 
-        self.list = QtGui.QListWidget(self.fileDock)
-        
-        filepath = ""
         if folder.exec_():
-            for filepath in folder.selectedFiles():
-                print filepath
-                self.folder_path = "%s/" %(filepath)
+            for folderPath in folder.selectedFiles():
+                self.folder_path = "%s/" %(folderPath)
+
+        # Ensure sidebar exists
+        if not hasattr(self, 'fileDock'):
+            self.layoutFolderSidebar()
+
         dirs = os.listdir(self.folder_path)
         for file in dirs:
-          print file
-          self.list.addItem(file)
-           
+          if os.path.isfile(os.path.join(self.folder_path,file)):
+            self.list.addItem(file)
 
-        filelist = QtGui.QGroupBox(self.fileDock)
-        filelistlayout = QtGui.QVBoxLayout()
-        filelistlayout.addWidget(self.list)
-
-        filelist.setLayout(filelistlayout)
-        self.fileDock.setWidget(filelist)
-
-        self.list.itemDoubleClicked.connect(self.showSelectedFile)
+        self.fileDock.updateGeometry()
 
     def showSelectedFile(self):
-
         self.selectedfile = self.list.currentItem().text()
-        print self.selectedfile
         
-        selectedfilestr = str(self.selectedfile)
-        selectedfilepath = "%s%s" %(self.folder_path, selectedfilestr)
-        print selectedfilepath
-        clickedfile= QtGui.QFileDialog.getOpenFileName(self, 'Open File', selectedfilepath)
+
+        selectedFileStr = str(self.selectedfile)
+        selectedFilePath = "%s%s" %(self.folder_path, selectedFileStr)
+
+        time, current, trigger = self.readFile(selectedFilePath)
+        self.calculateTriggerStats(time, current, trigger)
+        self.showPlot(time, current, trigger)
+
+    def openFile(self):
+        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
+        time, current, trigger = self.readFile(fname)
+        self.calculateTriggerStats(time, current, trigger)
+        self.calculateStats(time, current)
+        self.showPlot(time, current, trigger)
         
-        f1 = open(clickedfile, 'rb')
-        xTime = []
-        yCurrent = []
-        yTrigger = []
-        with f1:
-          self.reader = csv.reader(f1)
-          for row in self.reader:
-            xTime.extend([float(row[0])])
-            yCurrent.extend([float(row[1])])
-            yTrigger.extend([float(row[2])])
 
-        self.calculatestats(xTime,yCurrent,yTrigger)
-        self.showPlot(xTime, yCurrent, yTrigger)
         
-    def calculatestats(self,time,current,trigger):
-      avgcurrent = 0
-      avgtriggercurrent = 0
-      triggerthreshold = 1
-      count = 0
-      i = 0
+    def calculateTriggerStats(self, time, current, trigger):
+      triggerThreshold = 1.0
+      triggerCurrent = []
 
-      for index, triggervalue in enumerate(trigger):
-        if triggervalue >= triggerthreshold:
-          avgtriggercurrent += current[index]
-          i+= 1
-          
-          
-            
-        count+= 1
-        avgcurrent+= current[index]
-      avgtriggercurrent = avgtriggercurrent/i
-      avgcurrent = avgcurrent/count
-          
-      ptrig = float(avgtriggercurrent * 5.1)
-      p = float(avgcurrent * 5.1)
+      for index, triggerValue in enumerate(trigger):
+        if triggerValue >= triggerThreshold:
+          triggerCurrent.extend([current[index]])
 
-      ptrigstring = str(ptrig)
-      pstring = str(p)
+      avgTriggerCurrent = np.average(triggerCurrent)
+      stdevTriggerCurrent = np.std(triggerCurrent)
+      varTriggerCurrent = np.var(triggerCurrent)
 
-      print ptrigstring
-      print pstring
-                               
+      return (avgTriggerCurrent, stdevTriggerCurrent, varTriggerCurrent)
+
+    def calculateStats(self, time, current):
+      avgCurrent = np.average(current)
+      stdevCurrent = np.std(current)
+      varCurrent = np.var(current)
+      self.setFileStats(avgCurrent, stdevCurrent, varCurrent)
+      #return (avgCurrent, stdevCurrent, varCurrent)
+
+    def highlightTriggerRegions(self, time, trigger):
+      triggerThreshold = 1.0
+      minX = 0
+
+      for index, triggerValue in enumerate(trigger):
+        if triggerValue >= triggerThreshold and minX == 0:
+          minX = time[index]
+        elif minX != 0:
+          self.regionT = pg.LinearRegionItem([minX, time[index]],movable=False)
+          self.plot1.addItem(self.regionT)
+
+
     def layoutStatistics(self):
-
         # Statistics for the whole window
         self.wholeWindowBox = QtGui.QGroupBox(self.statsDock)
         self.wholeWindowBox.setFlat(True)
         self.wholeWindowBox.setTitle("Whole File")
 
         self.fileLabelMin = QtGui.QLabel(self.statsDock)
-        self.fileLabelMin.setText("Min Current: %.2f mA" % (0))
-
         self.fileLabelMax = QtGui.QLabel(self.statsDock)
-        self.fileLabelMax.setText("Max Current: %.2f mA" % (0))
+        self.fileLabelVar = QtGui.QLabel(self.statsDock)
+        
 
         self.wholeLayout = QtGui.QVBoxLayout()
         self.wholeLayout.addWidget(self.fileLabelMin)
         self.wholeLayout.addWidget(self.fileLabelMax)
+        self.wholeLayout.addWidget(self.fileLabelVar)
         self.wholeWindowBox.setLayout(self.wholeLayout)
 
         # Statistics for just the area under the trigger
@@ -210,43 +223,58 @@ class Example(QtGui.QMainWindow):
         self.statsBox.setLayout(self.vbox)
         self.statsDock.setWidget(self.statsBox)
 
-    def showDialog(self):
-
-        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
-        
+    def readFile(self, fname):
         f = open(fname, 'rb')
-        xTime = []
-        yCurrent = []
-        yTrigger = []
+        time = []
+        current = []
+        trigger = []
         with f:
           self.reader = csv.reader(f)
-          avgcurrent = 0
-          avgtriggercurrent = 0
-          triggerthreshold = 1
-          count = 0
-          i = 0
+
           for row in self.reader:
-            xTime.extend([float(row[0])])
-            yCurrent.extend([float(row[3])])
-            yTrigger.extend([float(row[6])])
 
-          self.calculatestats(xTime,yCurrent,yTrigger)
-          self.showPlot(xTime, yCurrent, yTrigger)
 
-          self.region = pg.LinearRegionItem()
-          self.plot1.addItem(self.region)
-          self.region.setRegion([0.1, 0.4])
-          self.region.sigRegionChanged.connect(self.regionChanged)
+          
+
+            time.extend([float(row[0])])
+            current.extend([float(row[3])])
+            trigger.extend([float(row[6])])
+
+
+        return (time, current, trigger)
 
     def regionChanged(self):
         minX, maxX = self.region.getRegion()
         self.regionLabelMin.setText("Region Min: %.3f" % (minX))
         self.regionLabelMax.setText("Region Max: %.3f" % (maxX))
+    #Get current statistics
+    def setFileStats(self,avg,mean,stddev):
+        averagecurrent = float(avg)
+        stddeviation = float(stddev)
+        variance = float(mean)
+        print averagecurrent
+        print stddeviation
+        self.fileLabelMin.setText("Average Current: %.2f mA" %(averagecurrent))
+        self.fileLabelMax.setText("Standard Deviation: %.2f mA" %(stddeviation))
+        self.fileLabelVar.setText("Variance: %.2f mA" %(variance))
+    
 
-    def showPlot(self,time,current,trigger):
-        self.plot1 = self.graphwin.addPlot(title="Plot of current vs time", labels={'left':"Current(mA)", 'bottom':"Time(s)"})
+    #def setTriggerStats(self,avg,mean,stddev):
+
+        
+        
+
+    def showPlot(self, time, current, trigger):
+        if not hasattr(self, 'plot1'):
+          self.plot1 = self.graphwin.addPlot(title="Plot of current vs time", labels={'left':"Current(mA)", 'bottom':"Time(s)"})
+          self.region = pg.LinearRegionItem()
+          self.plot1.addItem(self.region)
+          self.region.sigRegionChanged.connect(self.regionChanged)
+
         self.plot1.plot(time, current, pen=(0,255,0))
         self.plot1.plot(time, trigger, pen=(255,0,0))
+
+        self.region.setRegion([0.1, 0.4])
 
 def main():
     
