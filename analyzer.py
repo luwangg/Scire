@@ -109,6 +109,18 @@ class Example(QtGui.QMainWindow):
         clickedfile= QtGui.QFileDialog.getOpenFileName(self, 'Open File', selectedfilepath)
         
         f1 = open(clickedfile, 'rb')
+        xTime = []
+        yCurrent = []
+        yTrigger = []
+        with f1:
+          self.reader = csv.reader(f1)
+          for row in self.reader:
+            xTime.extend([float(row[0])])
+            yCurrent.extend([float(row[1])])
+            yTrigger.extend([float(row[2])])
+
+        self.calculatestats(xTime,yCurrent,yTrigger)
+        self.showPlot(xTime, yCurrent, yTrigger)
         
     def calculatestats(self,time,current,trigger):
       avgcurrent = 0
@@ -217,21 +229,7 @@ class Example(QtGui.QMainWindow):
             xTime.extend([float(row[0])])
             yCurrent.extend([float(row[3])])
             yTrigger.extend([float(row[6])])
-##            if float(row[6]) >= triggerthreshold:
-##              avgtriggercurrent += float(row[3])
-##              i+= 1
-##          
-##            
-##            count+= 1
-##            avgcurrent+= float(row[3])
-##          avgtriggercurrent = avgtriggercurrent/i
-##          avgcurrent = avgcurrent/count
-##          
-##          ptrig = float(avgtriggercurrent * 5.1)
-##          p = float(avgcurrent * 5.1)
-##
-##          ptrigstring = str(ptrig)
-##          pstring = str(p)
+
           self.calculatestats(xTime,yCurrent,yTrigger)
           self.showPlot(xTime, yCurrent, yTrigger)
 
