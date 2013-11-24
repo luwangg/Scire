@@ -24,11 +24,6 @@ class Example(QtGui.QMainWindow):
         self.graphwin.resize(600,800)
         self.graphwin.setWindowTitle('Current vs time')
         self.setCentralWidget(self.graphwin)
-        
-        self.folder_path = ""
-
-
-        
 
         # Create a status bar
         self.statusBar()
@@ -95,19 +90,20 @@ class Example(QtGui.QMainWindow):
         folder.setFileMode(QtGui.QFileDialog.Directory)
         folder.setOption(QtGui.QFileDialog.ShowDirsOnly, True)
 
-        # Ensure sidebar exists
-        if not hasattr(self, 'fileDock'):
-            self.layoutFolderSidebar()
-
-        folderPath = ""
         if folder.exec_():
             for folderPath in folder.selectedFiles():
                 self.folder_path = "%s/" %(folderPath)
+
+        # Ensure sidebar exists
+        if not hasattr(self, 'fileDock'):
+            self.layoutFolderSidebar()
 
         dirs = os.listdir(self.folder_path)
         for file in dirs:
           if os.path.isfile(os.path.join(self.folder_path,file)):
             self.list.addItem(file)
+
+        self.fileDock.updateGeometry()
 
     def showSelectedFile(self):
         self.selectedfile = self.list.currentItem().text()
@@ -116,40 +112,49 @@ class Example(QtGui.QMainWindow):
         selectedFilePath = "%s%s" %(self.folder_path, selectedFileStr)
 
         time, current, trigger = self.readFile(selectedFilePath)
-        self.calculateStats(time, current, trigger)
+        self.calculateTriggerStats(time, current, trigger)
         self.showPlot(time, current, trigger)
 
     def openFile(self):
         fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
         time, current, trigger = self.readFile(fname)
-        self.calculateStats(time, current, trigger)
+        self.calculateTriggerStats(time, current, trigger)
         self.showPlot(time, current, trigger)
         
-    def calculateStats(self, time, current, trigger):
+    def calculateTriggerStats(self, time, current, trigger):
       triggerThreshold = 1.0
-
-      i = 0
-      avgtriggercurrent = 0
+      triggerCurrent = []
 
       for index, triggerValue in enumerate(trigger):
         if triggerValue >= triggerThreshold:
-          avgtriggercurrent += current[index]
-          i += 1
+          triggerCurrent.extend([current[index]])
 
-      avgtriggercurrent = avgtriggercurrent/i
+      avgTriggerCurrent = np.average(triggerCurrent)
+      stdevTriggerCurrent = np.std(triggerCurrent)
+      varTriggerCurrent = np.var(triggerCurrent)
+
+      return (avgTriggerCurrent, stdevTriggerCurrent, varTriggerCurrent)
+
+    def calculateStats(self, time, current):
       avgCurrent = np.average(current)
-          
-      ptrig = float(avgtriggercurrent * 5.1)
-      p = float(avgCurrent * 5.1)
+      stdevCurrent = np.std(current)
+      varCurrent = np.var(current)
 
-      ptrigstring = str(ptrig)
-      pstring = str(p)
+      return (avgCurrent, stdevCurrent, varCurrent)
 
-      print ptrigstring
-      print pstring
-                               
+    def highlightTriggerRegions(self, time, trigger):
+      triggerThreshold = 1.0
+      minX = 0
+
+      for index, triggerValue in enumerate(trigger):
+        if triggerValue >= triggerThreshold and minX == 0:
+          minX = time[index]
+        elif minX != 0:
+          self.regionT = pg.LinearRegionItem([minX, time[index]],movable=False)
+          self.plot1.addItem(self.regionT)
+
+
     def layoutStatistics(self):
-
         # Statistics for the whole window
         self.wholeWindowBox = QtGui.QGroupBox(self.statsDock)
         self.wholeWindowBox.setFlat(True)
@@ -228,15 +233,17 @@ class Example(QtGui.QMainWindow):
         self.regionLabelMin.setText("Region Min: %.3f" % (minX))
         self.regionLabelMax.setText("Region Max: %.3f" % (maxX))
 
-    def showPlot(self,time,current,trigger):
-        self.plot1 = self.graphwin.addPlot(title="Plot of current vs time", labels={'left':"Current(mA)", 'bottom':"Time(s)"})
+    def showPlot(self, time, current, trigger):
+        if not hasattr(self, 'plot1'):
+          self.plot1 = self.graphwin.addPlot(title="Plot of current vs time", labels={'left':"Current(mA)", 'bottom':"Time(s)"})
+          self.region = pg.LinearRegionItem()
+          self.plot1.addItem(self.region)
+          self.region.sigRegionChanged.connect(self.regionChanged)
+
         self.plot1.plot(time, current, pen=(0,255,0))
         self.plot1.plot(time, trigger, pen=(255,0,0))
 
-        self.region = pg.LinearRegionItem()
-        self.plot1.addItem(self.region)
         self.region.setRegion([0.1, 0.4])
-        self.region.sigRegionChanged.connect(self.regionChanged)
 
 def main():
     
