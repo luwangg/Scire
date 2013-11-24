@@ -113,6 +113,7 @@ class Example(QtGui.QMainWindow):
             self.layoutFolderSidebar()
 
         dirs = os.listdir(self.folder_path)
+        self.list.clear()
         for file in dirs:
           if os.path.isfile(os.path.join(self.folder_path,file)):
             self.list.addItem(file)
