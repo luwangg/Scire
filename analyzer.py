@@ -53,30 +53,18 @@ class Example(QtGui.QMainWindow):
         exitAction.setStatusTip('Exit application')
         exitAction.triggered.connect(self.close)
 
-        menuOpen = menubar.addMenu('Open')
-        menuExit = menubar.addMenu('Exit')
+        #aboutAction = QtGui.QAction(None, 'About', self)
+        #aboutAction.triggered.connect(self.aboutWindow)
 
-        menuOpen.addAction(openFile)
-        menuOpen.addAction(openFolder)
-        menuExit.addAction(exitAction)
+        menuFile = menubar.addMenu('File')
+        #menuHelp = menubar.addMenu('Help')
+
+        menuFile.addAction(openFile)
+        menuFile.addAction(openFolder)
+        menuFile.addAction(exitAction)
 
         self.setWindowTitle('Data Analysis') 
-
-        self.layoutStatistics()
-
-        self.fileLabelMin.setText("Average Current: %.2f mA" % (0))
-        self.fileLabelMax.setText("Standard Deviation: %.2f mA" % (0))
-        self.fileLabelVar.setText("Variance: %.2f mA" %(0))
-
-        self.triggerLabelMin.setText("Average Current: %.2f mA" % (0))
-        self.triggerLabelMax.setText("Standard Deviation: %.2f mA" % (0))
-        self.triggerLabelVar.setText("Variance: %.2f mA" % (0))
-
-        self.regionLabelMin.setText("Average Current: %.2f mA" % (0))
-        self.regionLabelMax.setText("Standard Deviation: %.2f mA" % (0))
-        self.regionLabelVar.setText("Variance: %.2f mA" % (0))
-        
-        
+        self.layoutStatistics()    
         self.show()
 
     def layoutFolderSidebar(self):
@@ -98,6 +86,19 @@ class Example(QtGui.QMainWindow):
         self.filelist.setMinimumSize(150, 50)
         self.list.itemDoubleClicked.connect(self.showSelectedFile)
 
+    def openFile(self):
+        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
+        time, current, trigger = self.readFile(fname)
+
+        avgCurrent, stdevCurrent, varCurrent = self.calculateTriggerStats(time, current, trigger)
+        self.setTriggerStats(avgCurrent, stdevCurrent, varCurrent)
+
+        avgCurrent, stdevCurrent, varCurrent = self.calculateStats(time, current)
+        self.setFileStats(avgCurrent, stdevCurrent, varCurrent)
+
+        self.showPlot(time, current, trigger)
+        self.highlightTriggerRegions(time, trigger)
+        
     def openFolder(self):
         # Prompt for a folder
         folder = QtGui.QFileDialog(self, "Open Folder", ".")
@@ -122,7 +123,6 @@ class Example(QtGui.QMainWindow):
 
     def showSelectedFile(self):
         self.selectedfile = self.list.currentItem().text()
-        
 
         selectedFileStr = str(self.selectedfile)
         selectedFilePath = "%s%s" %(self.folder_path, selectedFileStr)
@@ -134,19 +134,8 @@ class Example(QtGui.QMainWindow):
         avgCurrentTrig, stddevCurrentTrig, varCurrentTrig = self.calculateTriggerStats(time, current, trigger)
         self.setTriggerStats(avgCurrentTrig, stddevCurrentTrig, varCurrentTrig)
         self.showPlot(time, current, trigger)
+        self.highlightTriggerRegions(time, trigger)
 
-    def openFile(self):
-        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
-        time, current, trigger = self.readFile(fname)
-
-        avgCurrent, stdevCurrent, varCurrent = self.calculateTriggerStats(time, current, trigger)
-        self.setTriggerStats(avgCurrent, stdevCurrent, varCurrent)
-
-        avgCurrent, stdevCurrent, varCurrent = self.calculateStats(time, current)
-        self.setFileStats(avgCurrent, stdevCurrent, varCurrent)
-
-        self.showPlot(time, current, trigger)
-        
     def calculateTriggerStats(self, time, current, trigger):
       triggerThreshold = 1.0
       triggerCurrent = []
@@ -168,6 +157,7 @@ class Example(QtGui.QMainWindow):
       
       return (avgCurrent, stdevCurrent, varCurrent)
 
+    # Highlights the last trigger region
     def highlightTriggerRegions(self, time, trigger):
       triggerThreshold = 1.0
       minX = 0
@@ -175,9 +165,10 @@ class Example(QtGui.QMainWindow):
       for index, triggerValue in enumerate(trigger):
         if triggerValue >= triggerThreshold and minX == 0:
           minX = time[index]
-        elif minX != 0:
-          self.regionT = pg.LinearRegionItem([minX, time[index]],movable=False)
+        elif triggerValue < triggerThreshold and minX != 0:
+          self.regionT = pg.LinearRegionItem([minX, time[index-1]],movable=False,brush=pg.mkColor("FF363618"))
           self.plot1.addItem(self.regionT)
+          minX = 0
 
 
     def layoutStatistics(self):
@@ -221,6 +212,17 @@ class Example(QtGui.QMainWindow):
         self.regionLabelMax = QtGui.QLabel(self.statsDock)
         self.regionLabelVar = QtGui.QLabel(self.statsDock)
         
+        self.fileLabelMin.setText("Average Current: %.2f mA" % 0)
+        self.fileLabelMax.setText("Standard Deviation: %.2f mA" % 0)
+        self.fileLabelVar.setText("Variance: %.2f mA" % 0)
+
+        self.triggerLabelMin.setText("Average Current: %.2f mA" % 0)
+        self.triggerLabelMax.setText("Standard Deviation: %.2f mA" % 0)
+        self.triggerLabelVar.setText("Variance: %.2f mA" % 0)
+
+        self.regionLabelMin.setText("Average Current: %.2f mA" % 0)
+        self.regionLabelMax.setText("Standard Deviation: %.2f mA" % 0)
+        self.regionLabelVar.setText("Variance: %.2f mA" % 0)
 
         self.selectorLayout = QtGui.QVBoxLayout()
         self.selectorLayout.addWidget(self.regionLabelMin)
@@ -296,9 +298,9 @@ class Example(QtGui.QMainWindow):
           self.plot1.showGrid(y=True)
 
         self.plot1.plot(time, current, pen=(0,255,0))
-        self.plot1.plot(time, trigger, pen=(255,0,0))
+        #self.plot1.plot(time, trigger, pen=(255,0,0))
         self.plot1.enableAutoRange(enable=True)
-        self.region.setRegion([0.1, 0.4])
+        self.region.setRegion([0.1, 0.2])
 
 def main():
     
