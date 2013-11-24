@@ -71,6 +71,10 @@ class Example(QtGui.QMainWindow):
         self.triggerLabelMin.setText("Average Current: %.2f mA" % (0))
         self.triggerLabelMax.setText("Standard Deviation: %.2f mA" % (0))
         self.triggerLabelVar.setText("Variance: %.2f mA" % (0))
+
+        self.regionLabelMin.setText("Average Current: %.2f mA" % (0))
+        self.regionLabelMax.setText("Standard Deviation: %.2f mA" % (0))
+        self.regionLabelVar.setText("Variance: %.2f mA" % (0))
         
         
         self.show()
@@ -123,7 +127,11 @@ class Example(QtGui.QMainWindow):
         selectedFilePath = "%s%s" %(self.folder_path, selectedFileStr)
 
         time, current, trigger = self.readFile(selectedFilePath)
-        self.calculateTriggerStats(time, current, trigger)
+        avgCurrent, stdevCurrent, varCurrent = self.calculateStats(time, current)
+        self.setFileStats(avgCurrent, stdevCurrent, varCurrent)
+
+        avgCurrentTrig, stddevCurrentTrig, varCurrentTrig = self.calculateTriggerStats(time, current, trigger)
+        self.setTriggerStats(avgCurrentTrig, stddevCurrentTrig, varCurrentTrig)
         self.showPlot(time, current, trigger)
 
     def openFile(self):
@@ -211,7 +219,7 @@ class Example(QtGui.QMainWindow):
         self.regionLabelMin = QtGui.QLabel(self.statsDock)
         self.regionLabelMax = QtGui.QLabel(self.statsDock)
         self.regionLabelVar = QtGui.QLabel(self.statsDock)
-        self.regionLabelVar.setText("Max Current: %.2f mA" % (0))
+        
 
         self.selectorLayout = QtGui.QVBoxLayout()
         self.selectorLayout.addWidget(self.regionLabelMin)
