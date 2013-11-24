@@ -67,6 +67,10 @@ class Example(QtGui.QMainWindow):
         self.fileLabelMin.setText("Average Current: %.2f mA" % (0))
         self.fileLabelMax.setText("Standard Deviation: %.2f mA" % (0))
         self.fileLabelVar.setText("Variance: %.2f mA" %(0))
+
+        self.triggerLabelMin.setText("Average Current: %.2f mA" % (0))
+        self.triggerLabelMax.setText("Standard Deviation: %.2f mA" % (0))
+        self.triggerLabelVar.setText("Variance: %.2f mA" % (0))
         
         
         self.show()
@@ -143,7 +147,8 @@ class Example(QtGui.QMainWindow):
       stdevTriggerCurrent = np.std(triggerCurrent)
       varTriggerCurrent = np.var(triggerCurrent)
 
-      return (avgTriggerCurrent, stdevTriggerCurrent, varTriggerCurrent)
+      #return (avgTriggerCurrent, stdevTriggerCurrent, varTriggerCurrent)
+      self.setTriggerStats(avgTriggerCurrent, stdevTriggerCurrent, varTriggerCurrent)
 
     def calculateStats(self, time, current):
       avgCurrent = np.average(current)
@@ -187,14 +192,18 @@ class Example(QtGui.QMainWindow):
         self.triggerBox.setTitle("Trigger Area(s)")
 
         self.triggerLabelMin = QtGui.QLabel(self.statsDock)
-        self.triggerLabelMin.setText("Min Current: %.2f mA" % (0))
+        
 
         self.triggerLabelMax = QtGui.QLabel(self.statsDock)
-        self.triggerLabelMax.setText("Max Current: %.2f mA" % (0))
+
+        self.triggerLabelVar = QtGui.QLabel(self.statsDock)
+
+        self.triggerLabelVar = QtGui.QLabel(self.statsDock)
 
         self.triggerLayout = QtGui.QVBoxLayout()
         self.triggerLayout.addWidget(self.triggerLabelMin)
         self.triggerLayout.addWidget(self.triggerLabelMax)
+        self.triggerLayout.addWidget(self.triggerLabelVar)
         self.triggerBox.setLayout(self.triggerLayout)
 
         # Statistics for the area between the selectors
@@ -259,7 +268,13 @@ class Example(QtGui.QMainWindow):
         self.fileLabelVar.setText("Variance: %.2f mA" %(variance))
     
 
-    #def setTriggerStats(self,avg,mean,stddev):
+    def setTriggerStats(self,avg,mean,stddev):
+        avgcurrent = float(avg)
+        stddeviation = float(stddev)
+        var = float(mean)
+        self.triggerLabelMin.setText("Average Current(under trigger): %.2f mA" %(avgcurrent))
+        self.triggerLabelMax.setText("Standard Deviation: %.2f mA" %(stddeviation))
+        self.triggerLabelVar.setText("Variance: %.2f mA" %(var))
 
         
         
