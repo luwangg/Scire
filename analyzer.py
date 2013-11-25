@@ -73,7 +73,7 @@ class Example(QtGui.QMainWindow):
 
         self.setWindowTitle('Data Analysis') 
         self.layoutStatistics()  
-        self.layoutControls()
+        # self.layoutControls()
         self.show()
 
     def layoutFolderSidebar(self):
@@ -96,13 +96,18 @@ class Example(QtGui.QMainWindow):
         self.list.itemDoubleClicked.connect(self.showSelectedFile)
 
     def openFile(self):
-        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
-        self.plotFile(fname)
+        fullPath = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '.')
+        self.plotFile(fullPath)
+        self.setRegionStats()
+        fname = fullPath.split("/")[-1]
+        self.plot1.setTitle(fname)
 
     def showSelectedFile(self):
         fname = self.list.currentItem().text()
         fullPath = "%s%s" %(self.folder_path, fname)
         self.plotFile(fullPath)
+        self.setRegionStats()
+        self.plot1.setTitle(fname)
 
     def plotFile(self, fullPath):
         time, current, trigger = self.readFile(fullPath)
@@ -152,13 +157,13 @@ class Example(QtGui.QMainWindow):
           triggerCurrent.extend([current[index]])
 
       stats = self.calculateStats(time, triggerCurrent)
-      stats.duration = self.deltaT * len(triggerCurrent)
+      stats.duration = self.deltaT * len(triggerCurrent) * 1000
       return stats
 
     def calculateStats(self, time, current):
       stats = StatsObject()
       
-      stats.duration = (time[len(time)-1] - time[0])
+      stats.duration = (time[len(time)-1] - time[0]) * 1000
 
       stats.currentAverage = np.average(current)
       stats.currentStddev = np.std(current)
@@ -189,7 +194,7 @@ class Example(QtGui.QMainWindow):
           minX = time[index]
         elif triggerValue < triggerThreshold and minX != 0:
           if not hasattr(self, "regionT"):
-            self.regionT = pg.LinearRegionItem([minX, time[index-1]], movable=False, brush=pg.mkColor("FF363618"))
+            self.regionT = pg.LinearRegionItem([minX, time[index-1]], movable=False, brush=pg.mkColor("FF363628"))
           else:
             self.regionT.setRegion([minX, time[index-1]])
 
@@ -278,12 +283,11 @@ class Example(QtGui.QMainWindow):
         self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.tableDock)
 
         self.table = QtGui.QTableWidget()
-        
 
         self.tableDock.setWidget(self.table)
 
     def populateStatsTable(self):
-        headers = ["Total Energy (mJ)", "Trigger Energy (mJ)", "Duration (mS)", "Trigger Duration", "Average Current (mA)", "Min Current",
+        headers = ["Total Energy (mJ)", "Trigger Energy", "Duration (mS)", "Trigger Duration", "Average Current (mA)",
                    "Max Current", "Min Current", "Average Power (mW)", "Max Power", "Min Power"]
         self.table.setColumnCount(len(headers))
         self.table.setHorizontalHeaderLabels(headers)
@@ -311,10 +315,11 @@ class Example(QtGui.QMainWindow):
           self.table.setItem(index, 3, QtGui.QTableWidgetItem("%.3f" % triggerStats.duration))
           self.table.setItem(index, 4, QtGui.QTableWidgetItem("%.3f" % stats.currentAverage))
           self.table.setItem(index, 5, QtGui.QTableWidgetItem("%.3f" % stats.currentMax))
-          self.table.setItem(index, 6, QtGui.QTableWidgetItem("%.3f" % stats.powerAverage))
-          self.table.setItem(index, 7, QtGui.QTableWidgetItem("%.3f" % stats.powerMax))
-          self.table.setItem(index, 8, QtGui.QTableWidgetItem("%.3f" % stats.powerMin))
-        
+          self.table.setItem(index, 6, QtGui.QTableWidgetItem("%.3f" % stats.currentMin))
+          self.table.setItem(index, 7, QtGui.QTableWidgetItem("%.3f" % stats.powerAverage))
+          self.table.setItem(index, 8, QtGui.QTableWidgetItem("%.3f" % stats.powerMax))
+          self.table.setItem(index, 9, QtGui.QTableWidgetItem("%.3f" % stats.powerMin))
+
         self.table.updateGeometry()
         self.table.verticalHeader().sectionDoubleClicked.connect(self.showFileFromTable)
 
@@ -322,6 +327,7 @@ class Example(QtGui.QMainWindow):
         fname = self.table.verticalHeaderItem(index).text()
         fullPath = "%s%s" %(self.folder_path, fname)
         self.plotFile(fullPath)
+        self.plot1.setTitle(fname)
 
     def readFile(self, fname):
         f = open(fname, 'rb')
@@ -387,6 +393,7 @@ class Example(QtGui.QMainWindow):
         self.region.setBounds([time[0], time[len(time)-1]])
         self.region.setRegion([time[0], time[15]])
         self.region.sigRegionChanged.connect(self.setRegionStats)
+        self.setRegionStats()
 
         self.plot1.showGrid(y=True)
 
