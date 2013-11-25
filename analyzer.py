@@ -107,8 +107,6 @@ class Example(QtGui.QMainWindow):
     def plotFile(self, fullPath):
         time, current, trigger = self.readFile(fullPath)
 
-        self.deltaT = float(time[1])
-
         stats = self.calculateStats(time, current)
         self.setFileStats(stats)
 
@@ -337,6 +335,8 @@ class Example(QtGui.QMainWindow):
             time.extend([float(row[0])])
             current.extend([float(row[1])])
             trigger.extend([float(row[2])])
+
+        self.deltaT = time[1]
 
         return (time, current, trigger)
 
