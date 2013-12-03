@@ -401,6 +401,10 @@ class Example(QtGui.QMainWindow):
         self.plot1.showGrid(y=True)
 
 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Enter or event.key() == QtCore.Qt.Key_Return:
+            self.showSelectedFile()
+
 def main():
     
     app = QtGui.QApplication(sys.argv)
