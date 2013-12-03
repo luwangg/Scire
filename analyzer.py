@@ -61,15 +61,23 @@ class Example(QtGui.QMainWindow):
         exitAction.setStatusTip('Exit application')
         exitAction.triggered.connect(self.close)
 
+        # Add button and shortcut to quit the program
+        exportTableAction = QtGui.QAction(QtGui.QIcon('exit24.png'), 'Export Table', self)
+        exportTableAction.setShortcut('Ctrl+E')
+        exportTableAction.setStatusTip('Export Table as CSV')
+        exportTableAction.triggered.connect(self.exportCSV)
+
         #aboutAction = QtGui.QAction(None, 'About', self)
         #aboutAction.triggered.connect(self.aboutWindow)
 
         menuFile = menubar.addMenu('File')
-        #menuHelp = menubar.addMenu('Help')
+        menuExport = menubar.addMenu('Export')
 
         menuFile.addAction(openFile)
         menuFile.addAction(openFolder)
         menuFile.addAction(exitAction)
+
+        menuExport.addAction(exportTableAction)
 
         self.setWindowTitle('Data Analysis') 
         self.layoutStatistics()  
@@ -111,7 +119,6 @@ class Example(QtGui.QMainWindow):
 
     def plotFile(self, fullPath):
         time, current, trigger = self.readFile(fullPath)
-
         
         stats = self.calculateStats(time, current)
         self.setFileStats(stats)
@@ -400,10 +407,27 @@ class Example(QtGui.QMainWindow):
 
         self.plot1.showGrid(y=True)
 
-
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Enter or event.key() == QtCore.Qt.Key_Return:
             self.showSelectedFile()
+
+    def exportCSV(self):
+      fullPath = QtGui.QFileDialog.getSaveFileName(self, 'Export CSV', '.')
+      outFile = open(fullPath, 'w')
+
+      line = ","
+      for column in range(self.table.columnCount()):
+        line += str(self.table.horizontalHeaderItem(column).text()) + ","
+      line = line[:-1]+"\n"
+      outFile.write(line)
+
+      for row in range(self.table.rowCount()):
+        line = "%s," % str(self.table.verticalHeaderItem(row).text())
+        for column in range(self.table.columnCount()):
+          line += str(self.table.item(row, column).text()) + ","
+        line = line[:-1]+"\n"
+        outFile.write(line)
+      outFile.close()
 
 def main():
     
