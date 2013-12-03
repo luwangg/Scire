@@ -55,6 +55,13 @@ class Example(QtGui.QMainWindow):
         openFolder.setStatusTip('Open Folder')
         openFolder.triggered.connect(self.openFolder)
 
+        # Add button and shortcut to export plots
+
+        exportPlot = QtGui.QAction(QtGui.QIcon('exit24.png'), 'Export', self)
+        exportPlot.setShortcut('Ctrl+P')
+        exportPlot.setStatusTip('Export Plot')
+        exportPlot.triggered.connect(self.exportPlot)
+
         # Add button and shortcut to quit the program
         exitAction = QtGui.QAction(QtGui.QIcon('exit24.png'), 'Exit', self)
         exitAction.setShortcut('Ctrl+Q')
@@ -65,11 +72,14 @@ class Example(QtGui.QMainWindow):
         #aboutAction.triggered.connect(self.aboutWindow)
 
         menuFile = menubar.addMenu('File')
+        menuExport = menubar.addMenu('Export')
         #menuHelp = menubar.addMenu('Help')
 
         menuFile.addAction(openFile)
         menuFile.addAction(openFolder)
         menuFile.addAction(exitAction)
+
+        menuExport.addAction(exportPlot)
 
         self.setWindowTitle('Data Analysis') 
         self.layoutStatistics()  
@@ -161,6 +171,18 @@ class Example(QtGui.QMainWindow):
       stats.duration = self.deltaT * len(triggerCurrent) * 1000
       return stats
 
+    def exportPlot(self):
+      # create an exporter instance, as an argument give it
+      # the item you wish to export
+      exporter = pg.exporters.ImageExporter.ImageExporter(self.plot1)
+
+      # set export parameters if needed
+      exporter.parameters()['width'] = 100   
+
+      # save to file
+      fullPath = QtGui.QFileDialog.getSaveFileName(self, 'Export Plot', '.')
+      
+      exporter.export
     def calculateStats(self, time, current):
       stats = StatsObject()
 
@@ -399,6 +421,7 @@ class Example(QtGui.QMainWindow):
         self.setRegionStats()
 
         self.plot1.showGrid(y=True)
+        
 
 
     def keyPressEvent(self, event):
