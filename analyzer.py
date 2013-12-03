@@ -112,6 +112,7 @@ class Example(QtGui.QMainWindow):
     def plotFile(self, fullPath):
         time, current, trigger = self.readFile(fullPath)
 
+        
         stats = self.calculateStats(time, current)
         self.setFileStats(stats)
 
@@ -162,25 +163,26 @@ class Example(QtGui.QMainWindow):
 
     def calculateStats(self, time, current):
       stats = StatsObject()
-      
-      stats.duration = (time[len(time)-1] - time[0]) * 1000
 
-      stats.currentAverage = np.average(current)
-      stats.currentStddev = np.std(current)
-      stats.currentMax = np.max(current)
-      stats.currentMin = np.min(current)
+      if not len(time) == 0:
+        stats.duration = (time[len(time)-1] - time[0]) * 1000
 
-      voltage = 5.1
-      power = [x * voltage for x in current]
+        stats.currentAverage = np.average(current)
+        stats.currentStddev = np.std(current)
+        stats.currentMax = np.max(current)
+        stats.currentMin = np.min(current)
 
-      stats.powerAverage = np.average(power)
-      stats.powerStddev = np.std(power)
-      stats.powerMax = np.max(power)
-      stats.powerMin = np.min(power)
+        voltage = 5.1
+        power = [x * voltage for x in current]
 
-      energy = [p * self.deltaT for p in power]
+        stats.powerAverage = np.average(power)
+        stats.powerStddev = np.std(power)
+        stats.powerMax = np.max(power)
+        stats.powerMin = np.min(power)
 
-      stats.energy = np.sum(energy)
+        energy = [p * self.deltaT for p in power]
+
+        stats.energy = np.sum(energy)
 
       return stats
 
@@ -357,7 +359,8 @@ class Example(QtGui.QMainWindow):
             rMinIndex = index
           if t <= maxX:
             rMaxIndex = index
-
+            
+        
         stats = self.calculateStats(self.plotDataX[rMinIndex:rMaxIndex], self.plotDataY[rMinIndex:rMaxIndex])
 
         self.regionLabelEnergy.setText("Energy: %.3f mJ" % stats.energy)
