@@ -7,6 +7,14 @@ from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
 import csv
 
+__author__ = "Derek Kozel, Mridula Chappalli Srinivasa"
+__copyright__ = "Copyright 2012"
+__license__ = "GPL 3+"
+__version__ = "1.0.0"
+__maintainer__ = "Derek Kozel"
+__email__ = "derek@derekkozel.com"
+__status__ = "Production"
+
 class StatsObject(object):
   def __init__(self):
     self.energy = 0
