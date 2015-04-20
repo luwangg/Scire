@@ -17,3 +17,7 @@ Contributing
 ------------
 
 The project is not being actively developed but feature requests, bugs, and pull requests are most welcome via GitHub Issues or email.
+
+Authors
+-------  
+Derek Kozel and Mridula Chappalli Srinivasa
