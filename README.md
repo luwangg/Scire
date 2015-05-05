@@ -3,7 +3,7 @@ Scire
 
 A power and energy analysis utility for embedded systems.
 
-This utility was initially developed to make analysing current traces made during a Low Power System on Chip Architecture course. The example files are samples from two of the labs and the suffix  numbers are the number of bytes being sent over an 802.15.4 link by an Atmel ATmega128RFA1 board.
+This utility was initially developed to make analysing current traces made during a Low Power System on Chip Architecture course quicker and easier. The example files are samples from two of the labs and the suffix  numbers are the number of bytes being sent over an 802.15.4 link by an Atmel ATmega128RFA1 board.
 
 Running
 -------
